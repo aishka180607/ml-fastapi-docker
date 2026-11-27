@@ -90,7 +90,6 @@ best_model.fit(X_train, y_train)
 joblib.dump(best_model, "model.joblib")
 print("Model saved to model.joblib")
 
-# best model goes to Model Registry
 with mlflow.start_run(run_name=f"Best model - {best_name}"):
     mlflow.log_param("model_name", best_name)
     mlflow.log_params(models[best_name].get_params())
