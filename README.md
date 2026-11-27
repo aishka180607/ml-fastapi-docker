@@ -1,6 +1,6 @@
 # Bird Strike Prediction API
 
-In this project I trained a machine learning model and deployed it as an API using FastAPI and Docker.
+In this project I trained a machine learning model and deployed it as an API using FastAPI and Docker (Practical Task 6). In SIS-3 I extended it with a Streamlit frontend and MLflow for experiment tracking and model registry.
 
 ## About the project
 
@@ -40,13 +40,15 @@ The best model by F1 is Gradient Boosting, so it is saved in `model.joblib` toge
 
 ## Project structure
 
-1. `train.py` - trains the models and saves the best one
+1. `train.py` - trains the models, logs them to MLflow and saves the best one
 2. `main.py` - FastAPI app
-3. `model.joblib` - saved model
-4. `birds.csv` - dataset
-5. `requirements.txt` - libraries
-6. `Dockerfile` - instructions for Docker image
-7. `README.md` - this file
+3. `app.py` - Streamlit frontend
+4. `.streamlit/config.toml` - theme colors for Streamlit
+5. `model.joblib` - saved model
+6. `birds.csv` - dataset
+7. `requirements.txt` - libraries
+8. `Dockerfile` - instructions for Docker image
+9. `README.md` - this file
 
 ## How to run locally
 
@@ -68,6 +70,42 @@ python train.py
 uvicorn main:app --reload
 ```
 5. Open in browser http://127.0.0.1:8000/ and http://127.0.0.1:8000/docs
+
+## MLflow (SIS-3)
+
+`train.py` uses MLflow to track experiments:
+
+1. Experiment name: `bird-strike-prediction`
+2. Every model (Logistic Regression, Random Forest, Gradient Boosting) is logged as a separate run
+3. For each run I log:
+   1. parameters - model name and all hyperparameters of the model
+   2. metrics - accuracy, precision, recall, F1
+   3. artifact - the trained model
+4. The best model (Gradient Boosting) is logged in a separate run with `model.joblib` file and registered in the Model Registry as `bird-strike-model`. Every time `train.py` is run a new version is created (version 1, 2, 3...)
+
+MLflow data is saved in `mlflow.db` (SQLite) and `mlruns/` folder.
+
+To open MLflow UI:
+```
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+Then open http://127.0.0.1:5000. In "Experiments" you can compare runs and in "Models" you can see the registered model and its versions.
+
+## Streamlit frontend (SIS-3)
+
+`app.py` is a web page in pastel aviation style where user can describe the flight and get prediction. The sidebar looks like a boarding pass and shows model info and the current model version from MLflow Registry. Streamlit does not use the model directly, it sends request to FastAPI `/predict` endpoint and shows the result.
+
+1. Start the API in the first terminal:
+```
+uvicorn main:app --reload
+```
+2. Start Streamlit in the second terminal:
+```
+streamlit run app.py
+```
+3. Open http://localhost:8501, fill the form and press "Predict"
+
+So the full system is: Streamlit (frontend) → FastAPI (API) → model, and MLflow is used for training and model management.
 
 ## How to run with Docker
 
